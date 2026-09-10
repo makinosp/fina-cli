@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "id": "42",
+      "attributes": {
+        "transactions": [
+          {
+            "type": "withdrawal",
+            "date": "2026-09-01",
+            "amount": "10.00",
+            "description": "Coffee",
+            "source_name": "Cash",
+            "destination_name": "Cafe"
+          }
+        ]
+      }
+    }
+  ]
+}

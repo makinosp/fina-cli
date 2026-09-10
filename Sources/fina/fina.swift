@@ -1,9 +1,11 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 
+import FinaCore
+
 @main
-struct fina {
-    static func main() {
-        print("Hello, world!")
+struct FinaMain {
+    static func main() async {
+        await Fina.main()
     }
 }
