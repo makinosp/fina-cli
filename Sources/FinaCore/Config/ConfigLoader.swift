@@ -47,25 +47,30 @@ public struct ConfigLoader: Sendable {
             }
         }
 
-        let envBaseURL = environment[Self.envBaseURLKey]?.trimmingCharacters(in: .whitespacesAndNewlines)
-            .isEmpty == false ? environment[Self.envBaseURLKey] : nil
-        let envToken = environment[Self.envTokenKey]?.trimmingCharacters(in: .whitespacesAndNewlines)
-            .isEmpty == false ? environment[Self.envTokenKey] : nil
+        let envBaseURL =
+            environment[Self.envBaseURLKey]?.trimmingCharacters(in: .whitespacesAndNewlines)
+                .isEmpty == false ? environment[Self.envBaseURLKey] : nil
+        let envToken =
+            environment[Self.envTokenKey]?.trimmingCharacters(in: .whitespacesAndNewlines)
+                .isEmpty == false ? environment[Self.envTokenKey] : nil
 
         let baseURL = fileBaseURL ?? envBaseURL
         let token = fileToken ?? envToken
 
+        // (a) File existed but was unusable and env provides no fallback.
+        if fileExists, let reason = fileInvalidReason,
+            fileBaseURL == nil || fileToken == nil,
+            envBaseURL == nil, envToken == nil
+        {
+            throw ConfigError.invalid(path: resolvedPath.path, reason: reason)
+        }
+
+        // (b) Still missing credentials after file + env resolution.
         guard let baseURL, !baseURL.isEmpty, let token, !token.isEmpty else {
-            if fileExists, let reason = fileInvalidReason, fileBaseURL == nil || fileToken == nil {
-                // File existed but was unusable and env did not fill the gap.
-                if envBaseURL == nil && envToken == nil {
-                    throw ConfigError.invalid(path: resolvedPath.path, reason: reason)
-                }
-            }
             throw ConfigError.missing(path: resolvedPath.path)
         }
 
-        // Validate base URL shape.
+        // (c) Malformed URL shape.
         guard URL(string: baseURL) != nil else {
             throw ConfigError.invalid(path: resolvedPath.path, reason: "baseURL is not a valid URL")
         }
@@ -93,7 +98,7 @@ public struct ConfigLoader: Sendable {
     /// Current POSIX permissions, if readable.
     public static func currentPermissions(at path: URL) -> Int? {
         guard let attrs = try? FileManager.default.attributesOfItem(atPath: path.path),
-              let perms = attrs[.posixPermissions] as? NSNumber
+            let perms = attrs[.posixPermissions] as? NSNumber
         else { return nil }
         return perms.intValue & 0o777
     }

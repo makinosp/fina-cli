@@ -22,6 +22,10 @@ public struct TableFormatter: Sendable {
         return alignedTable(rows)
     }
 
+    /// Align columns with two-space separators. The last column is intentionally
+    /// left unpadded to avoid trailing whitespace; widths are still computed
+    /// consistently so all preceding columns align. Missing cells are filled
+    /// with "" and empty input returns "" (callers always include headers).
     func alignedTable(_ rows: [[String]]) -> String {
         guard !rows.isEmpty else { return "" }
         let columnCount = rows.map(\.count).max() ?? 0

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import FinaCore
 
 @Suite(.serialized) struct MockClientTests {
@@ -25,7 +26,8 @@ import Testing
 
     @Test func clientListsTransactionsWithLimitAndFilter() async throws {
         let session = makeMockSession()
-        let client = FireflyClient(baseURL: URL(string: "https://demo.example")!, token: "t", session: session)
+        let client = FireflyClient(
+            baseURL: URL(string: "https://demo.example")!, token: "t", session: session)
         let json = try fixtureData("transactions.json")
         nonisolated(unsafe) var seenURLs: [String] = []
         MockURLProtocol.handler = { request in
@@ -42,9 +44,28 @@ import Testing
         #expect(seenURLs[0].contains("limit=1") == true)
     }
 
+    @Test func clientAppliesFilterBeforeLimit() async throws {
+        let session = makeMockSession()
+        let client = FireflyClient(
+            baseURL: URL(string: "https://demo.example")!, token: "t", session: session)
+        let json = try fixtureData("transactions.json")
+        MockURLProtocol.handler = { request in
+            (httpResponse(url: request.url!), json)
+        }
+        defer { MockURLProtocol.handler = nil }
+        // Fixture order: [Cash->Shop, Employer->Bank]. Old limit-then-filter
+        // with limit=1 + account=Bank would return 0 rows; filter-then-limit
+        // must return the single Bank match.
+        let combined = try await client.listTransactions(limit: 1, account: "Bank")
+        #expect(combined.count == 1)
+        #expect(combined[0].destination == "Bank")
+        #expect(combined[0].id == "2")
+    }
+
     @Test func clientCreatesTransactionWithIdOrName() async throws {
         let session = makeMockSession()
-        let client = FireflyClient(baseURL: URL(string: "https://demo.example")!, token: "t", session: session)
+        let client = FireflyClient(
+            baseURL: URL(string: "https://demo.example")!, token: "t", session: session)
         nonisolated(unsafe) var seenMethod: String?
         nonisolated(unsafe) var seenBody: String = ""
         MockURLProtocol.handler = { request in
@@ -66,7 +87,8 @@ import Testing
 
     @Test func clientUpdatesTransactionViaPut() async throws {
         let session = makeMockSession()
-        let client = FireflyClient(baseURL: URL(string: "https://demo.example")!, token: "t", session: session)
+        let client = FireflyClient(
+            baseURL: URL(string: "https://demo.example")!, token: "t", session: session)
         nonisolated(unsafe) var seenMethod: String?
         nonisolated(unsafe) var seenURL: String?
         nonisolated(unsafe) var seenBody: String = ""

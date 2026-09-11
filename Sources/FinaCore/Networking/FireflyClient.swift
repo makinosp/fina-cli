@@ -1,6 +1,7 @@
 import Foundation
+
 #if canImport(FoundationNetworking)
-import FoundationNetworking
+    import FoundationNetworking
 #endif
 
 public struct FireflyClient: FireflyAPI, Sendable {
@@ -15,7 +16,8 @@ public struct FireflyClient: FireflyAPI, Sendable {
     }
 
     public init(config: FinaConfig, session: URLSession = .shared) throws {
-        let trimmed = config.baseURL.hasSuffix("/") ? String(config.baseURL.dropLast()) : config.baseURL
+        let trimmed =
+            config.baseURL.hasSuffix("/") ? String(config.baseURL.dropLast()) : config.baseURL
         guard let url = URL(string: trimmed) else {
             throw FireflyError.invalidBaseURL(config.baseURL)
         }
@@ -23,7 +25,8 @@ public struct FireflyClient: FireflyAPI, Sendable {
     }
 
     func apiURL(_ path: String, query: [URLQueryItem] = []) -> URL? {
-        var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1\(path)"), resolvingAgainstBaseURL: false)
+        var comps = URLComponents(
+            url: baseURL.appendingPathComponent("api/v1\(path)"), resolvingAgainstBaseURL: false)
         if !query.isEmpty {
             comps?.queryItems = query
         }
@@ -68,7 +71,8 @@ public struct FireflyClient: FireflyAPI, Sendable {
         guard let url = apiURL("/accounts") else {
             throw FireflyError.invalidBaseURL(baseURL.absoluteString)
         }
-        let decoded: ListResponse<AccountResource> = try await perform(makeRequest(url: url, method: "GET"), as: ListResponse<AccountResource>.self)
+        let decoded: ListResponse<AccountResource> = try await perform(
+            makeRequest(url: url, method: "GET"), as: ListResponse<AccountResource>.self)
         return decoded.data.map(Account.from(resource:))
     }
 
@@ -80,19 +84,21 @@ public struct FireflyClient: FireflyAPI, Sendable {
         guard let url = apiURL("/transactions", query: query) else {
             throw FireflyError.invalidBaseURL(baseURL.absoluteString)
         }
-        let decoded: ListResponse<TransactionResource> = try await perform(makeRequest(url: url, method: "GET"), as: ListResponse<TransactionResource>.self)
+        let decoded: ListResponse<TransactionResource> = try await perform(
+            makeRequest(url: url, method: "GET"), as: ListResponse<TransactionResource>.self)
         var views: [TransactionView] = []
         for group in decoded.data {
             for split in group.attributes.transactions ?? [] {
                 views.append(TransactionView.from(groupId: group.id, split: split))
             }
         }
-        // Reverse-chronological is API default; enforce limit locally too.
-        if let limit, views.count > limit {
-            views = Array(views.prefix(limit))
-        }
+        // Reverse-chronological is API default; filter first, then cap the
+        // filtered result so combined --account + --limit behaves predictably.
         if let account, !account.isEmpty {
             views = views.filter { $0.source == account || $0.destination == account }
+        }
+        if let limit, views.count > limit {
+            views = Array(views.prefix(limit))
         }
         return views
     }
@@ -103,18 +109,24 @@ public struct FireflyClient: FireflyAPI, Sendable {
             throw FireflyError.invalidBaseURL(baseURL.absoluteString)
         }
         let body = try JSONEncoder().encode(store)
-        let decoded: SingleResponse<TransactionResource> = try await perform(makeRequest(url: url, method: "POST", body: body), as: SingleResponse<TransactionResource>.self)
+        let decoded: SingleResponse<TransactionResource> = try await perform(
+            makeRequest(url: url, method: "POST", body: body),
+            as: SingleResponse<TransactionResource>.self)
         return decoded.data.id
     }
 
-    public func updateTransaction(id: String, fields: TransactionUpdateFields) async throws -> String {
+    public func updateTransaction(id: String, fields: TransactionUpdateFields) async throws
+        -> String
+    {
         let split = fields.makeSplit(journalId: fields.journalId)
         let update = try TransactionUpdateRequest(transactions: [split])
         guard let url = apiURL("/transactions/\(id)") else {
             throw FireflyError.invalidBaseURL(baseURL.absoluteString)
         }
         let body = try JSONEncoder().encode(update)
-        let decoded: SingleResponse<TransactionResource> = try await perform(makeRequest(url: url, method: "PUT", body: body), as: SingleResponse<TransactionResource>.self)
+        let decoded: SingleResponse<TransactionResource> = try await perform(
+            makeRequest(url: url, method: "PUT", body: body),
+            as: SingleResponse<TransactionResource>.self)
         return decoded.data.id
     }
 }

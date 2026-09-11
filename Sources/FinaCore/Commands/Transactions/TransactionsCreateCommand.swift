@@ -38,6 +38,14 @@ public struct TransactionsCreate: AsyncParsableCommand {
     }
 
     public func run() async throws {
+        try TransactionInputValidator.validateCreate(
+            type: type,
+            date: date,
+            amount: amount,
+            description: description,
+            source: source,
+            destination: destination
+        )
         let split = TransactionSplitRequest(
             type: type,
             date: date,

@@ -49,6 +49,7 @@ public struct TransactionsUpdate: AsyncParsableCommand {
             currencyCode: currency,
             journalId: journalId
         )
+        try TransactionInputValidator.validateUpdate(fields)
         let context = CommandContext()
         let client = try context.makeClient()
         let updatedId = try await client.updateTransaction(id: id, fields: fields)

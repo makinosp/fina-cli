@@ -1,33 +1,4 @@
-## Purpose
-
-Provides a Swift-native terminal client for Firefly III covering account balances and single-split transaction workflows.
-
-## Requirements
-
-### Requirement: Configuration file loading
-The system SHALL load Firefly III connection settings from `~/.config/fina/config.json` containing base URL and Personal Access Token.
-
-#### Scenario: Valid config loads
-- **WHEN** the config file exists with valid JSON containing base URL and token
-- **THEN** commands authenticate against `<base-url>/api/v1` with `Authorization: Bearer <token>`
-
-#### Scenario: Missing config fails clearly
-- **WHEN** the config file is missing or invalid
-- **THEN** the CLI exits non-zero with a plain-text message stating the expected path and required fields
-
-### Requirement: Account listing
-The system SHALL list accounts with ID, name, type, currency, and current balance via `fina accounts list`.
-
-#### Scenario: List asset accounts
-- **WHEN** the user runs `fina accounts list`
-- **THEN** the system displays one plain-text row per account including balance
-
-### Requirement: Balance display
-The system SHALL show current balance per account in the account list output.
-
-#### Scenario: Balance shown
-- **WHEN** account data includes balance fields from the API
-- **THEN** the output row includes currency code and balance amount
+## MODIFIED Requirements
 
 ### Requirement: Transaction listing
 The system SHALL list transactions with ID, date, description, type, amount, source, and destination via `fina transactions list`.

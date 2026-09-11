@@ -1,11 +1,13 @@
 import Foundation
 import Testing
+
 @testable import FinaCore
 
 @Test func configLoadsValidFile() async throws {
     try withTempDir { dir in
         let path = dir.appendingPathComponent("config.json")
-        try #"{"baseURL": "https://demo.example", "token": "abc"}"#.write(to: path, atomically: true, encoding: .utf8)
+        try #"{"baseURL": "https://demo.example", "token": "abc"}"#.write(
+            to: path, atomically: true, encoding: .utf8)
         let config = try ConfigLoader().load(from: path, env: [:])
         #expect(config.baseURL == "https://demo.example")
         #expect(config.token == "abc")
@@ -54,9 +56,32 @@ import Testing
 @Test func configFilePermissionsAreRestricted() async throws {
     try withTempDir { dir in
         let path = dir.appendingPathComponent("config.json")
-        try #"{"baseURL": "https://demo.example", "token": "abc"}"#.write(to: path, atomically: true, encoding: .utf8)
+        try #"{"baseURL": "https://demo.example", "token": "abc"}"#.write(
+            to: path, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: path.path)
         _ = try ConfigLoader().load(from: path, env: [:])
         #expect(ConfigLoader.currentPermissions(at: path) == 0o600)
+    }
+}
+
+@Test func configInvalidFileWithPartialEnvThrowsMissing() async throws {
+    try withTempDir { dir in
+        let path = dir.appendingPathComponent("config.json")
+        try "not-json".write(to: path, atomically: true, encoding: .utf8)
+        // Invalid file + partial env (only baseURL): still missing token.
+        do {
+            _ = try ConfigLoader().load(from: path, env: ["FINA_BASE_URL": "https://env.example"])
+            Issue.record("expected missing config error")
+        } catch let error as ConfigError {
+            #expect(error.errorDescription?.contains(path.path) == true)
+            #expect(error.errorDescription?.contains("token") == true)
+        }
+        // Invalid file + no env: invalid file error.
+        do {
+            _ = try ConfigLoader().load(from: path, env: [:])
+            Issue.record("expected invalid config error")
+        } catch let error as ConfigError {
+            #expect(error.errorDescription?.contains(path.path) == true)
+        }
     }
 }
